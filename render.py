@@ -1,7 +1,7 @@
 """Render luslec's RW item market stock as a set of forum images.
 
 Reads the item market listings for the API key in TORN_KEY and writes
-out/stock-1.png ... out/stock-N.png. Unused slots become a 1x1 transparent
+out/stock-1.png ... out/stock-N.png. Unused slots become a transparent strip 1px tall
 PNG so the forum post can always reference all N files.
 
 Local test without the API:  python render.py --sample listings.json
@@ -265,7 +265,7 @@ def render(listings):
     for i in range(SLOTS):
         path = os.path.join(OUT, f"stock-{i + 1}.png")
         if i >= len(pages):
-            Image.new("RGBA", (1, 1), (0, 0, 0, 0)).save(path)
+            Image.new("RGBA", (W * S, 1), (0, 0, 0, 0)).save(path)  # wide and 1px tall, so it takes no space
             continue
         page = pages[i]
         h = sum(b.h for b in page) + (8 if i == len(pages) - 1 else 0)
