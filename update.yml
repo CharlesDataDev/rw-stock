@@ -1,0 +1,44 @@
+name: Update stock images
+
+on:
+  schedule:
+    - cron: "17 * * * *"   # every hour at :17 (Torn time = UTC)
+  workflow_dispatch:        # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stock-images
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q fonts-inter fonts-dejavu-core
+          ls /usr/share/fonts/opentype/inter/ || true
+          pip install pillow==10.4.0
+
+      - name: Render images
+        env:
+          TORN_KEY: ${{ secrets.TORN_KEY }}
+        run: python render.py
+
+      - name: Publish images to the "images" branch
+        run: |
+          cd out
+          git init -q -b images
+          git config user.name "stock-bot"
+          git config user.email "stock-bot@users.noreply.github.com"
+          git add .
+          git commit -q -m "Stock images $(date -u '+%Y-%m-%d %H:%M') TCT"
+          git push -q --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" images
