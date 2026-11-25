@@ -210,18 +210,24 @@ class Note:
         d.text((16 * S, (y + 10) * S), self.text, font=F_SUB, fill=MUTED)
 
 
+def by_bonus(x):
+    """Group by bonus name (A-Z), highest bonus % first, then highest price. No bonus goes last."""
+    b = (x["item"].get("bonuses") or [{}])[0]
+    return (b.get("title") is None, (b.get("title") or "").lower(), -(b.get("value") or 0), -x["price"])
+
+
 def build_blocks(listings):
     rw = [x for x in listings if (x.get("item") or {}).get("rarity") in RARITY]
     blocks = [Header(sum(x.get("amount", 1) for x in rw), time.strftime("%d %b %H:%M TCT", time.gmtime()))]
     for typ, label in CATS:
-        g = sorted([x for x in rw if x["item"].get("type") == typ], key=lambda x: -x["price"])
+        g = sorted([x for x in rw if x["item"].get("type") == typ], key=by_bonus)
         if g:
             blocks.append(CatHead(label, len(g)))
             blocks += [Row(x) for x in g]
     other = [x for x in rw if x["item"].get("type") not in dict(CATS)]
     if other:
         blocks.append(CatHead("Other", len(other)))
-        blocks += [Row(x) for x in sorted(other, key=lambda x: -x["price"])]
+        blocks += [Row(x) for x in sorted(other, key=by_bonus)]
     if len(blocks) == 1:
         blocks.append(Note("Nothing listed right now. Message me for what's coming in."))
     return blocks
